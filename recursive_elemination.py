@@ -66,7 +66,7 @@ X_train_split, X_val_split, y_train_split, y_val_split = train_test_split(X_trai
 model = RandomForestClassifier(n_estimators=100, class_weight='balanced', verbose=1)
 # Perform RFECV
 rfecv = RFECV(estimator=model, step=1, cv=5, scoring='accuracy', verbose=2)
-rfecv.fit(X_train_scaled, y_train)
+rfecv.fit(X_train_split, y_train_split)
 
 # Print the selected features and their performance
 selected_features = X_train_scaled.columns[rfecv.support_]
@@ -74,11 +74,11 @@ print(f"Selected features: {selected_features}")
 print(f"Number of features selected: {rfecv.n_features_}")
 
 # Optionally, you can use the selected features to train and evaluate your final model
-X_train_selected = rfecv.transform(X_train_scaled)
+X_train_selected = rfecv.transform(X_train_split)
 X_val_selected = rfecv.transform(X_val_split)
 
 # Train the model on selected features
-model.fit(X_train_selected, y_train)
+model.fit(X_train_selected, y_train_split)
 y_val_pred = model.predict(X_val_selected)
 
 # Evaluate the model
@@ -105,17 +105,3 @@ np.savetxt('grid_search.txt', y_test_pred.astype(int), fmt='%d', newline='\n')
 #        'dI54', 'dI56', 'dI57', 'dI58'],
 #       dtype='object')
 # Number of features selected: 23
-# Accuracy: 1.0
-# Precision: 1.0
-# Recall: 1.0
-# F1 Score: 1.0
-# Classification Report:
-#               precision    recall  f1-score   support
-
-#           -1       1.00      1.00      1.00       622
-#            0       1.00      1.00      1.00       216
-#            1       1.00      1.00      1.00       762
-
-#     accuracy                           1.00      1600
-#    macro avg       1.00      1.00      1.00      1600
-# weighted avg       1.00      1.00      1.00      1600
