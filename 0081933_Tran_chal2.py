@@ -8,6 +8,13 @@ import numpy as np
 
 class CustomRandomForestClassifier:
     def __init__(self, n_estimators=40, random_state=42, cost_matrix=None):
+        """Custom Random Forest Classifier
+
+        Args:
+            n_estimators (int, optional): Number of estimators. Defaults to 40.
+            random_state (int, optional): Random state. Defaults to 42.
+            cost_matrix (np.array, optional): Challenge Metric. Defaults to None.
+        """
         self.n_estimators = n_estimators
         self.random_state = random_state
         self.classifier = RandomForestClassifier(
@@ -24,6 +31,14 @@ class CustomRandomForestClassifier:
 
     @staticmethod
     def load_csv(file_path):
+        """Load a CSV file
+
+        Args:
+            file_path (str): Path to the CSV file
+
+        Returns:
+            data: DataFrame containing the data
+        """
         data = pd.read_csv(file_path, delimiter=";")
         data = data.replace(",", ".", regex=True).apply(pd.to_numeric, errors="ignore")
         if "Perform" in data.columns:
@@ -32,6 +47,17 @@ class CustomRandomForestClassifier:
 
     @staticmethod
     def calculate_custom_error(preds, gt, cost_matrix):
+        """Calculate the custom challenge error
+
+        Args:
+            preds (list/array): Predictions
+            gt (list/array): Ground truth
+            cost_matrix (array): Cost matrix
+
+        Raises:
+            ValueError: Error message
+            ValueError: Error message
+        """
         cm = confusion_matrix(gt, preds)
         if cm.shape != cost_matrix.shape:
             raise ValueError(
@@ -45,6 +71,14 @@ class CustomRandomForestClassifier:
         return error
 
     def preprocess_data(self, data):
+        """Preprocess the data
+
+        Args:
+            data (DataFrame): Input data
+
+        Returns:
+            data: Preprocessed data
+        """
         data["Group"] = self.label_encoder.fit_transform(data["Group"])
         cols = data.columns.tolist()
         cols = cols[1:] + cols[0:1]
@@ -53,12 +87,35 @@ class CustomRandomForestClassifier:
         return data
 
     def fit(self, X, y):
+        """Fit the model
+
+        Args:
+            X (array): Features
+            y (array): Target
+        """
         self.classifier.fit(X, y)
 
     def predict(self, X):
+        """Make predictions
+
+        Args:
+            X (array): Features
+
+        Returns:
+            predictions: Predictions
+        """
         return self.classifier.predict(X)
 
     def evaluate(self, X, y):
+        """Evaluate the model
+
+        Args:
+            X (array): Features
+            y (array): Target
+
+        Returns:
+            metrics: Accuracy, classification report, confusion matrix, custom error
+        """
         y_pred = self.predict(X)
         accuracy = accuracy_score(y, y_pred)
         report = classification_report(y, y_pred)
@@ -67,6 +124,12 @@ class CustomRandomForestClassifier:
         return accuracy, report, matrix, custom_error
 
     def save_predictions(self, predictions, filename="predictions.txt"):
+        """Save the predictions to a file
+
+        Args:
+            predictions (list/array): Predictions
+            filename (str, optional): Path to export file. Defaults to "predictions.txt".
+        """
         np.savetxt(filename, predictions, fmt="%d", delimiter="\n")
 
 
