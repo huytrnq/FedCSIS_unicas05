@@ -32,4 +32,4 @@ def calculate_custom_error(preds, gt, cost_matrix=cost_matrix):
         raise ValueError("The length of ground truth cannot be zero.")
     
     error = np.sum(weighted_cm) / total_samples
-    return error
+    return -error

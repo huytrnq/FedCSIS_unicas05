@@ -1,4 +1,5 @@
 from typing import Any
+import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
@@ -6,13 +7,14 @@ from sklearn.impute import KNNImputer
 
 class DataLoader:
     def __init__(self, data_path, 
+                type, # 'train' or 'test'
                 imputation_strategy='median', 
                 scaler=StandardScaler(),
-                type='train', # 'train' or 'test'
                 split=False, 
                 test_size=0.2, 
                 drop_nan=None, 
-                features='all'):
+                features='all', 
+                columns_to_drop=None):
         """Load and preprocess data for classification tasks
 
         Args:
@@ -33,6 +35,7 @@ class DataLoader:
         self.drop_nan = drop_nan
         self.type = type
         self.features = features
+        self.columns_to_drop = columns_to_drop
 
     def load_data(self):
         """Load the dataset"""
@@ -46,6 +49,14 @@ class DataLoader:
             threshold (float, optional): Threshold for missing values. Defaults to 0.5.
         """
         self.data = self.data.drop(columns=[x for x in self.data if self.data[x].isna().sum() > len(self.data)*threshold])
+        
+    def drop_columns(self, columns):
+        """Drop columns from the dataset
+
+        Args:
+            columns (list): List of columns to drop
+        """
+        self.data = self.data.drop(columns=columns)
 
 
     def convert_to_float(self):
@@ -88,8 +99,13 @@ class DataLoader:
         elif self.imputation_strategy == 'interpolate':
             self.data.interpolate(inplace=True)
         elif self.imputation_strategy == 'knn':
-            imputer = KNNImputer(n_neighbors=2)
-            self.data = imputer.fit_transform(self.data)
+            numerical_cols = self.data.select_dtypes(include=[np.number]).columns.tolist()
+            non_numerical_cols = self.data.select_dtypes(exclude=[np.number]).columns.tolist()
+            # Impute Missing Values in numerical columns using KNNImputer
+            imputer = KNNImputer(n_neighbors=5)
+            df_numerical_imputed = pd.DataFrame(imputer.fit_transform(self.data[numerical_cols]), columns=numerical_cols)
+            # Concatenate imputed numerical columns with non-numerical columns
+            self.data = pd.concat([df_numerical_imputed, self.data[non_numerical_cols]], axis=1)
         else:
             raise ValueError('Invalid imputation strategy')
             
@@ -115,7 +131,7 @@ class DataLoader:
         return X
 
     def split_data(self, X, y):
-        return train_test_split(X, y, test_size=self.test_size, random_state=42, stratify=y)
+        return train_test_split(X, y, test_size=self.test_size, random_state=42)
     
     def filter_features(self, X, features):
         if features == 'average':
@@ -128,15 +144,19 @@ class DataLoader:
         self.load_data()
         if self.drop_nan:
             self.drop_nan_columns(self.drop_nan)
-        self.one_hot_encoding()
+        # self.one_hot_encoding()
         self.convert_to_float()
         self.handle_missing_values()
+        if self.columns_to_drop:
+            self.drop_columns(self.columns_to_drop)
         if self.type == 'train':
             X, y = self.separate_features_target()
             X_scaled = self.scale_features(X)
             X_scaled = self.filter_features(X_scaled, features=self.features)
             if self.split:
                 return self.split_data(X_scaled, y)
+            else:
+                return X_scaled, y
         else:
             X_scaled = self.scale_features(self.data)  
             X_scaled = self.filter_features(X_scaled, features=self.features)
